@@ -1,9 +1,8 @@
-import streamlit as st
+import streamlit as st  
 from tensorflow.keras.applications.resnet50 import preprocess_input, ResNet50
 from tensorflow.keras.layers import GlobalAveragePooling2D, Dense
 from tensorflow.keras.models import Model
 from tensorflow.keras.preprocessing import image
-from streamlit_webrtc import VideoTransformerBase, webrtc_streamer
 import numpy as np
 import os
 import time
@@ -41,7 +40,7 @@ def capture_image(label, save_folder):
 
 
 st.sidebar.title("Navigation")
-section = st.sidebar.radio("Go to", ["Introduction", "Section 2", "Section 3", "Section 4", "Section 5", "Section 6", "Section 7", "Section 8", "Section 9", "Section 10", "Section 11", "Section 12", "Section 13", "Section 14"])
+section = st.sidebar.radio("Go to", ["Introduction", "Section 2", "Section 3", "Section 4", "Section 5", "Section 6", "Section 7", "Section 8", "Section 9", "Train", "Section 11", "Section 12", "Section 13", "Section 14"])
 
 # Set the theme to light
 st.markdown(
@@ -73,6 +72,22 @@ st.markdown(
 )
 
 
+me_files = None
+not_me_files = None
+
+# Function to get or create the session state
+def get_session_state():
+    if 'me_files' not in st.session_state:
+        st.session_state.me_files = None
+    if 'not_me_files' not in st.session_state:
+        st.session_state.not_me_files = None
+
+# Function to upload images
+def upload_images(label, key):
+    return st.file_uploader(f"Upload '{label}' images", type=["jpg", "png"], accept_multiple_files=True, key=key)
+
+# Get or create session state
+get_session_state()
 
 
 # Section 1: What is Face Recognition? /////////////////////////////////////////////////////////////////////////////////////
@@ -95,35 +110,13 @@ if section == "Introduction":
 
   
 
-
-
-
 # Section 2: How do Computers Recognize Faces? /////////////////////////////////////////////////////////////////////////////////////
 elif section == "Section 2":
     st.markdown('<div class="center"><h2>Section 2: How do Computers Recognize Faces?</h2></div>', unsafe_allow_html=True)
     st.markdown("""
                 <div class=contaienr> <p>The Face Recognition system uses Machine Learning to analyze and process facial features from images or videos. Features can include anything, from the distance between your eyes to the size of your nose. These features, which are unique to each person, are also known as Facial Landmarks. The machine learns patterns in these landmarks by training Artificial Neural Networks. The machine can then identify people’s faces by matching these learned patterns against new facial data.
-</p> </div>
-""", unsafe_allow_html=True)
-    
-    # video_path = "media/next_for_fr.mp4"
-
-    # css_code = """
-    #     <style>
-    #         .video {
-    #             display: flex;
-    #             justify-content: center;
-    #             align-items: center;
-    #             height: 100vh;
-    #         }
-    #         .video-container {
-    #             width: 50%;
-    #         }
-    #     </style>
-    # """
-    
-    # # st.markdown(css_code, unsafe_allow_html=True)
-    # st.markdown(f'<div class="video"><div class="video-container">{st.video(video_path)}</div></div>', unsafe_allow_html=True)
+                    </p> </div>
+                    """, unsafe_allow_html=True)
 
 
     video_url = "media/next_for_fr.mp4"
@@ -200,34 +193,54 @@ elif section == "Section 4":
                 </div>""", unsafe_allow_html=True)
 
 
-# Section 3: Teach the Computer to Recognize your Face /////////////////////////////////////////////////////////////////////////////////////
+# Section 5: Teach the Computer to Recognize your Face /////////////////////////////////////////////////////////////////////////////////////
 elif section == "Section 5":
+    get_session_state()  # Get or create session state
+
     col1, col2 = st.columns(2)
     with col1:
         st.markdown("""
-                <div class=contaienr> <p>Let’s start by giving the machine lots of images of you in different places, in different poses, and at different angles. </p> </div>""", unsafe_allow_html=True)
-        st.markdown(""" <h4>Upload 'me' images</h4>  """, unsafe_allow_html=True)
-        me_files = st.file_uploader("", type=["jpg", "png"], accept_multiple_files=True, key="me")
-        st.markdown(""" <h4>Capture 'me' images</h4>  """, unsafe_allow_html=True)
+            <div class=container> <p>Let’s start by giving the machine lots of images of you in different places, in different poses, and at different angles. </p> </div>""", unsafe_allow_html=True)
+        
+        # # Check if there are previously uploaded 'me' files in the session state
+        existing_me_files = st.session_state.me_files or []
+
+        # Allow uploading new 'me' files
+        new_me_files = st.file_uploader("Upload new 'me' images", type=["jpg", "png"], accept_multiple_files=True, key="new_me")
+        if new_me_files:
+            # Append new files to existing ones
+            st.session_state.me_files = existing_me_files + new_me_files
+
         if st.button("Capture 'me' Image"):
             capture_image('me', os.path.abspath('captured_images/me'))
 
     with col2:
         st.markdown("""
-                    <div class=contaienr> <p>Next, let’s give it images of people that are not you, so the machine understands the difference.</p>
-                </div>""", unsafe_allow_html=True)
-        st.markdown(""" <h4>Upload 'not me' images</h4>  """, unsafe_allow_html=True)
-        not_me_files = st.file_uploader("Upload 'not me' Class Images", type=["jpg", "png"], accept_multiple_files=True, key="not_me")
-        st.markdown(""" <h4>Capture 'not me' images</h4>  """, unsafe_allow_html=True)
+            <div class=container> <p>Next, let’s give it images of people that are not you, so the machine understands the difference.</p> </div>""", unsafe_allow_html=True)
+        
+        # # Check if there are previously uploaded 'not me' files in the session state
+        existing_not_me_files = st.session_state.not_me_files or []
+
+        # Allow uploading new 'not me' files
+        new_not_me_files = st.file_uploader("Upload new 'not me' images", type=["jpg", "png"], accept_multiple_files=True, key="new_not_me")
+        if new_not_me_files:
+            # Append new files to existing ones
+            st.session_state.not_me_files = existing_not_me_files + new_not_me_files
+
         if st.button("Capture 'not me' Image"):
             capture_image('not_me', os.path.abspath('captured_images/not_me'))
 
-    
     if st.button("Previous"):
         st.markdown("<a href='#Section-3'>Go to Section 3</a>", unsafe_allow_html=True)
 
-# /////////////////////////////////////////////////////////////////////////////////////
+
+# Section 6: Some other section 
 elif section == "Section 6":
+    # Use session state to access uploaded files
+    get_session_state() 
+    me_files = st.session_state.me_files
+    not_me_files = st.session_state.not_me_files
+
     st.markdown('<div class="center"><h2 class="header"> Step 2 - Train The Machine </h2> </div>', unsafe_allow_html=True)
     col1, col2 = st.columns(2)
     with col1:
@@ -236,9 +249,9 @@ elif section == "Section 6":
                 </p> </div>  """, unsafe_allow_html=True)
 
     with col2:
-        # st.markdown('<img src="media/Picture1.png">', unsafe_allow_html=True)
         image1 = Image.open('media/Picture2.png')
         st.image(image1, caption='')
+
 # sectino 7 /////////////////////////////////////////////////////////////////////////////////////
 elif section == "Section 7":
     st.markdown('<div class = "center"><h2 class="header"> What do you mean by machine learning ?</h2></div>', unsafe_allow_html=True)
@@ -319,13 +332,25 @@ elif section == "Section 9":
                 <div class=contaienr> <p>Every Neural Network has one input and one output layer, but can have any number of hidden layers. Machine Learning Engineers often use systematic experimentation to discover what works best for the specific data. They train the model with a different number of hidden layers to see which one works best.
                 </p> </div>  """, unsafe_allow_html=True)
 
-elif section == "Section 10":
+elif section == "Train":
+    
+
+    # Use session state to access uploaded files
+    me_files = st.session_state.me_files
+    not_me_files = st.session_state.not_me_files
+
     st.markdown('<h2 class="header"> Train the Machine </h2> ', unsafe_allow_html=True)
     st.write("""Now let us set up our Machine Learning model!  Enter the number of epochs for which you would like the model to train:""")
     epochs_duplicate = st.slider("Number of Epochs", 10, 100, 10)
     epochs = (epochs_duplicate // 10)
     st.write("""Once your model is all set, you can start training your model - 
     """)
+
+    # Use session state to access uploaded files
+    get_session_state() 
+    me_files = st.session_state.me_files
+    not_me_files = st.session_state.not_me_files
+
     # Train the model
     if st.button("Train Model"):
         # Gather paths for uploaded and captured images
@@ -403,6 +428,8 @@ elif section == "Section 10":
         # Save the model
         model.save('model.h5')
 
+        # Use session state to access uploaded files
+       
 elif section == "Section 11":
         st.markdown('<h2 class="header"> Train the Machine Again </h2> ', unsafe_allow_html=True)
         st.write("""If the accuracy is not good enough you can consider re-adjusting the training parameters, and training again. """)
